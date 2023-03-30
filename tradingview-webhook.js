@@ -30,10 +30,10 @@ function handleWebhook(req, res) {
 }
 
 function handlePing(req, res) {
-  res.send('Pong!');
+  res.send('pong');
 }
 
 module.exports = {
   handleWebhook,
-  handlePing,
+  handlePing
 };

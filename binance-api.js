@@ -1,36 +1,52 @@
 const Binance = require('node-binance-api');
-
 const binance = new Binance().options({
-  APIKEY: process.env.API_KEY,
-  APISECRET: process.env.API_SECRET,
+  APIKEY: process.env.BINANCE_API_KEY,
+  APISECRET: process.env.BINANCE_API_SECRET,
   useServerTime: true,
-  test: true,
+  test: true
 });
 
-function getAllTrades(req, res) {
-  binance.allOrders('BTCUSDT', (error, orders) => {
+function getAllTrades(callback) {
+  binance.futuresUserTrades('BTCUSDT', (error, trades) => {
     if (error) {
-      console.error('Failed to get all trades:', error);
-      res.status(500).send('Failed to get all trades');
+      console.error('Failed to fetch trades:', error);
+      callback([]);
       return;
     }
-    res.json(orders);
+    const formattedTrades = trades.map(trade => ({
+      id: trade.orderId,
+      symbol: trade.symbol,
+      side: trade.isBuyer ? 'BUY' : 'SELL',
+      price: parseFloat(trade.price),
+      quantity: parseFloat(trade.qty),
+      time: new Date(trade.time)
+    }));
+    callback(formattedTrades);
   });
 }
 
-function closeTrade(req, res) {
-  const orderId = req.body.orderId;
-  binance.cancel('BTCUSDT', orderId, (error, response) => {
-    if (error) {
-      console.error('Failed to close trade:', error);
-      res.status(500).send('Failed to close trade');
+function closeTrade(tradeId, callback) {
+  getAllTrades(trades => {
+    const trade = trades.find(t => t.id === tradeId);
+    if (!trade) {
+      console.warn(`Trade ${tradeId} not found`);
+      callback(false);
       return;
     }
-    res.send('Trade closed');
+    const side = trade.side === 'BUY' ? 'SELL' : 'BUY';
+    binance.futuresMarketOrder(trade.symbol, side, trade.quantity, { newOrderRespType: 'FULL' }, (error, response) => {
+      if (error) {
+        console.error(`Failed to execute ${side} order for trade ${trade.id}:`, error);
+        callback(false);
+        return;
+      }
+      console.log(`Successfully closed trade ${trade.id} with ${side} order:`, response);
+      callback(true);
+    });
   });
 }
 
 module.exports = {
   getAllTrades,
-  closeTrade,
+  closeTrade
 };

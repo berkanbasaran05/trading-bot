@@ -1,4 +1,12 @@
 {
+  "name": "binance-trade-bot",
+  "version": "1.0.0",
+  "description": "A trading bot that executes trades on Binance based on TradingView webhook signals.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+
   "dependencies": {
     "body-parser": "^1.20.2",
     "crypto": "^1.0.1",
